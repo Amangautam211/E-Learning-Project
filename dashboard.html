@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | EduSmart AI</title>
+  <style>
+    :root {
+      --u-purple: #a435f0;
+      --u-dark: #2d2f31;
+      --u-gray: #6a6f73;
+      --bg-light: #f7f9fa;
+      --white: #ffffff;
+      --border: #d1d7dc;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--white);
+      color: var(--u-dark);
+      display: flex;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 260px;
+      height: 100vh;
+      background: var(--u-dark);
+      color: white;
+      position: fixed;
+      padding: 20px 0;
+    }
+
+    .sidebar-logo {
+      padding: 0 25px 30px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #ce97fb;
+    }
+
+    .nav-item {
+      padding: 15px 25px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      transition: 0.3s;
+      font-size: 15px;
+    }
+
+    .nav-item:hover { background: rgba(255,255,255,0.1); }
+    .nav-item.active { background: var(--u-purple); }
+
+    /* Main Content Area */
+    .main-content {
+      margin-left: 260px;
+      width: calc(100% - 260px);
+      min-height: 100vh;
+    }
+
+    .top-nav {
+      padding: 15px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .container { padding: 30px 40px; }
+
+    /* Welcome Banner */
+    .welcome-banner {
+      background: var(--u-dark);
+      color: white;
+      padding: 40px;
+      margin-bottom: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Course Grid */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .course-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 25px;
+      margin-bottom: 50px;
+    }
+
+    .course-card {
+      border: 1px solid var(--border);
+      overflow: hidden;
+      transition: 0.3s;
+      cursor: pointer;
+    }
+
+    .course-card:hover { transform: translateY(-5px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+
+    .course-img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+    }
+
+    .card-body { padding: 15px; }
+
+    .course-tag {
+      background: #eceb98;
+      font-size: 11px;
+      padding: 4px 8px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+
+    .progress-container {
+      height: 8px;
+      background: #eee;
+      border-radius: 10px;
+      margin: 15px 0 5px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--u-purple);
+      border-radius: 10px;
+    }
+
+    .logout-btn {
+      background: transparent;
+      border: 1px solid var(--u-dark);
+      padding: 8px 16px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .logout-btn:hover { background: #eee; }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <div class="sidebar-logo">EduSmart</div>
+    <div class="nav-item active">My Learning</div>
+    <div class="nav-item">Recommended</div>
+    <div class="nav-item">Wishlist</div>
+    <div class="nav-item">Settings</div>
+  </div>
+
+  <div class="main-content">
+    <div class="top-nav">
+      <div id="welcome-text" style="font-weight: bold;">Dashboard</div>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="container">
+      <div class="welcome-banner">
+        <div>
+          <h1 id="user-greeting" style="margin:0;">Hi, Aman!</h1>
+          <p style="opacity: 0.8;">You have 2 courses in progress. Keep it up!</p>
+        </div>
+        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" width="80" alt="Profile">
+      </div>
+
+      <div class="section-header">
+        <h2>In Progress</h2>
+        <a href="#" style="color: var(--u-purple); font-weight: bold; text-decoration: none;">View all</a>
+      </div>
+
+      <div class="course-grid">
+        <div class="course-card">
+          <img class="course-img" src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=400&q=80" alt="Python">
+          <div class="card-body">
+            <h3 style="font-size: 16px; margin: 0 0 10px;">Python Basics for Data Science</h3>
+            <p style="font-size: 12px; color: var(--u-gray);">Instructor: Jose Portilla</p>
+            <div class="progress-container"><div class="progress-bar" style="width: 65%;"></div></div>
+            <span style="font-size: 11px; font-weight: bold;">65% Complete</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>AI Recommendations for You</h2>
+        <span style="font-size: 12px; color: var(--u-gray);">Based on your interest in Cybersecurity</span>
+      </div>
+
+      <div class="course-grid">
+        <div class="course-card">
+          <img class="course-img" src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=400&q=80" alt="Cyber">
+          <div class="card-body">
+            <div class="course-tag">Top Pick</div>
+            <h3 style="font-size: 16px; margin: 0 0 10px;">The Complete Ethical Hacking Course</h3>
+            <p style="font-size: 12px; color: var(--u-gray);">Instructor: Nathan House</p>
+            <div style="color: #b4690e; font-size: 13px; font-weight: bold; margin-top: 5px;">4.9 ★★★★★</div>
+          </div>
+        </div>
+
+        <div class="course-card">
+          <img class="course-img" src="https://images.unsplash.com/photo-1558494949-ef010cbdcc51?auto=format&fit=crop&w=400&q=80" alt="OS">
+          <div class="card-body">
+            <div class="course-tag">New</div>
+            <h3 style="font-size: 16px; margin: 0 0 10px;">Operating Systems Fundamentals</h3>
+            <p style="font-size: 12px; color: var(--u-gray);">Instructor: Dr. Angela Yu</p>
+            <div style="color: #b4690e; font-size: 13px; font-weight: bold; margin-top: 5px;">4.7 ★★★★☆</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const userEmail = localStorage.getItem("user");
+
+    if(!userEmail){
+        window.location.href = "login.html";
+    } else {
+        // Cleaning up email to show just the name
+        const name = userEmail.split('@')[0];
+        document.getElementById("user-greeting").innerText = "Hi, " + name.charAt(0).toUpperCase() + name.slice(1) + "!";
+    }
+
+    function logout(){
+        localStorage.removeItem("user");
+        window.location.href = "index.html";
+    }
+  </script>
+
+</body>
+</html>
