@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Courses — LearnVerse</title>
+  <meta name="description" content="Browse 30+ expert courses in Web Development, AI, Data Science, Mobile Dev, Cybersecurity, and Cloud Computing.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <div class="bg-animated"></div>
+  <header class="navbar" id="navbar"></header>
+
+  <main class="page-wrapper">
+    <div class="container courses-page">
+      <div class="courses-page__header animate-fadeInUp">
+        <h1 class="courses-page__title">Explore <span class="text-gradient">Courses</span></h1>
+        <p class="courses-page__subtitle">30+ expert-crafted courses across 6 technology domains</p>
+      </div>
+
+      <!-- Controls -->
+      <div class="courses-page__controls animate-fadeInUp delay-1">
+        <div class="courses-page__search">
+          <div class="search-bar">
+            <span class="search-bar__icon">🔍</span>
+            <input type="text" class="search-bar__input" id="searchInput" placeholder="Search courses, topics, or skills..." oninput="filterCourses()">
+          </div>
+        </div>
+        <div class="filter-bar">
+          <select class="filter-select" id="categoryFilter" onchange="filterCourses()">
+            <option value="">All Categories</option>
+          </select>
+          <select class="filter-select" id="difficultyFilter" onchange="filterCourses()">
+            <option value="">All Levels</option>
+            <option value="Beginner">Beginner</option>
+            <option value="Intermediate">Intermediate</option>
+            <option value="Advanced">Advanced</option>
+          </select>
+          <select class="filter-select" id="sortFilter" onchange="filterCourses()">
+            <option value="popular">Most Popular</option>
+            <option value="rating">Highest Rated</option>
+            <option value="newest">Newest</option>
+            <option value="az">A-Z</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Category Chips -->
+      <div class="flex flex-wrap gap-2 mb-6 animate-fadeInUp delay-2" id="categoryChips"></div>
+
+      <!-- Results Info -->
+      <div class="courses-page__results" id="resultsInfo"></div>
+
+      <!-- Course Grid -->
+      <div class="courses-grid" id="coursesGrid"></div>
+
+      <!-- Empty State -->
+      <div class="courses-page__empty hidden" id="emptyState">
+        <div class="courses-page__empty-icon">🔍</div>
+        <h3 class="courses-page__empty-text">No courses found</h3>
+        <p class="text-secondary mb-6">Try adjusting your search or filters</p>
+        <button class="btn btn--primary" onclick="clearFilters()">Clear Filters</button>
+      </div>
+    </div>
+    <div id="footer"></div>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/recommend.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    // Populate category filter
+    const categoryFilter = document.getElementById('categoryFilter');
+    const categoryChips = document.getElementById('categoryChips');
+
+    CATEGORIES.forEach(cat => {
+      categoryFilter.innerHTML += `<option value="${cat.id}">${cat.icon} ${cat.name}</option>`;
+      categoryChips.innerHTML += `
+        <button class="chip" data-category="${cat.id}" onclick="toggleCategoryChip(this, '${cat.id}')">
+          ${cat.icon} ${cat.name}
+        </button>
+      `;
+    });
+
+    // Check URL params for initial category
+    const params = new URLSearchParams(window.location.search);
+    const initCategory = params.get('category');
+    if (initCategory) {
+      categoryFilter.value = initCategory;
+      document.querySelector(`.chip[data-category="${initCategory}"]`)?.classList.add('active');
+    }
+
+    function toggleCategoryChip(el, catId) {
+      const isActive = el.classList.contains('active');
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      if (!isActive) {
+        el.classList.add('active');
+        categoryFilter.value = catId;
+      } else {
+        categoryFilter.value = '';
+      }
+      filterCourses();
+    }
+
+    function filterCourses() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const category = categoryFilter.value;
+      const difficulty = document.getElementById('difficultyFilter').value;
+      const sort = document.getElementById('sortFilter').value;
+
+      let filtered = COURSES.filter(c => {
+        const matchSearch = !search ||
+          c.title.toLowerCase().includes(search) ||
+          c.description.toLowerCase().includes(search) ||
+          c.tags.some(t => t.toLowerCase().includes(search)) ||
+          c.instructor.name.toLowerCase().includes(search);
+        const matchCategory = !category || c.category === category;
+        const matchDifficulty = !difficulty || c.difficulty === difficulty;
+        return matchSearch && matchCategory && matchDifficulty;
+      });
+
+      // Sort
+      switch (sort) {
+        case 'popular': filtered.sort((a, b) => b.enrolledCount - a.enrolledCount); break;
+        case 'rating': filtered.sort((a, b) => b.rating - a.rating); break;
+        case 'newest': filtered.sort((a, b) => COURSES.indexOf(b) - COURSES.indexOf(a)); break;
+        case 'az': filtered.sort((a, b) => a.title.localeCompare(b.title)); break;
+      }
+
+      // Render
+      const grid = document.getElementById('coursesGrid');
+      const empty = document.getElementById('emptyState');
+      const results = document.getElementById('resultsInfo');
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        grid.classList.add('hidden');
+        empty.classList.remove('hidden');
+        results.textContent = '';
+      } else {
+        empty.classList.add('hidden');
+        grid.classList.remove('hidden');
+        results.textContent = `Showing ${filtered.length} course${filtered.length !== 1 ? 's' : ''}`;
+        grid.innerHTML = filtered.map(course => {
+          const progress = Store.getProgress(course.id);
+          return UI.renderCourseCard(course, progress);
+        }).join('');
+      }
+    }
+
+    function clearFilters() {
+      document.getElementById('searchInput').value = '';
+      categoryFilter.value = '';
+      document.getElementById('difficultyFilter').value = '';
+      document.getElementById('sortFilter').value = 'popular';
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      filterCourses();
+    }
+
+    // Initial render
+    filterCourses();
+    document.getElementById('footer').innerHTML = UI.renderFooter();
+  </script>
+</body>
+</html>

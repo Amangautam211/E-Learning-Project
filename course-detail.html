@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course — LearnVerse</title>
+  <meta name="description" content="Watch lessons, take quizzes, and track your progress on LearnVerse.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <div class="bg-animated"></div>
+  <header class="navbar" id="navbar"></header>
+
+  <main class="page-wrapper">
+    <div class="container course-detail" id="courseContent">
+      <div class="skeleton skeleton-image" style="height:400px;margin-bottom:24px"></div>
+    </div>
+    <div id="footer"></div>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/recommend.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    let currentCourse = null;
+    let currentLesson = 0;
+    let quizState = { current: 0, score: 0, answered: [] };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const courseId = params.get('id');
+      currentCourse = COURSES.find(c => c.id === courseId);
+
+      if (!currentCourse) {
+        document.getElementById('courseContent').innerHTML = `
+          <div class="text-center p-8"><h2>Course not found</h2>
+          <a href="courses.html" class="btn btn--primary mt-4">Browse Courses</a></div>`;
+        return;
+      }
+
+      document.title = currentCourse.title + ' — LearnVerse';
+      renderCourse();
+      document.getElementById('footer').innerHTML = UI.renderFooter();
+    });
+
+    function renderCourse() {
+      const c = currentCourse;
+      const cat = CATEGORIES.find(ct => ct.id === c.category);
+      const progress = Store.getProgress(c.id);
+      const isEnrolled = progress?.enrolled;
+      const lesson = c.lessons[currentLesson];
+
+      const totalLessons = c.lessons.length;
+      const completedLessons = progress ? progress.completedLessons.length : 0;
+      const progressPct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+      const content = document.getElementById('courseContent');
+      content.innerHTML = `
+        <div class="course-detail__layout">
+          <div class="course-detail__main">
+            <!-- Video Player -->
+            <div class="video-player" id="videoPlayer">
+              ${isEnrolled && lesson ? `
+                <iframe src="${lesson.videoUrl}?rel=0" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+              ` : `
+                <img src="${c.thumbnail}" alt="${c.title}" style="width:100%;height:100%;object-fit:cover">
+                <div class="video-player__overlay" onclick="${isEnrolled ? `playLesson(0)` : `enrollCourse()`}">
+                  <div class="video-player__play-btn">▶</div>
+                </div>
+              `}
+            </div>
+
+            <!-- Course Info -->
+            <div class="course-detail__info animate-fadeInUp">
+              <div class="course-detail__category">${cat ? cat.icon + ' ' + cat.name : ''}</div>
+              <h1 class="course-detail__title">${c.title}</h1>
+              <p class="course-detail__desc">${c.description}</p>
+              <div class="course-detail__meta">
+                <span class="course-detail__meta-item">⭐ ${c.rating} rating</span>
+                <span class="course-detail__meta-item">📚 ${c.lessons.length} lessons</span>
+                <span class="course-detail__meta-item">⏱️ ${c.duration}</span>
+                <span class="course-detail__meta-item">🎓 ${c.difficulty}</span>
+                <span class="course-detail__meta-item">👥 ${c.enrolledCount.toLocaleString()} enrolled</span>
+              </div>
+              <div class="course-detail__tags">
+                ${c.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+              </div>
+            </div>
+
+            <!-- Lesson List -->
+            <div class="lesson-list animate-fadeInUp delay-1">
+              <h2 class="lesson-list__title">📖 Course Content (${c.lessons.length} lessons)</h2>
+              ${c.lessons.map((lesson, i) => {
+                const completed = progress?.completedLessons.includes(i);
+                const active = i === currentLesson && isEnrolled;
+                return `
+                  <div class="lesson-item ${active ? 'active' : ''} ${completed ? 'completed' : ''}"
+                       onclick="${isEnrolled ? `playLesson(${i})` : `enrollCourse()`}">
+                    <div class="lesson-item__number">${completed ? '✓' : i + 1}</div>
+                    <div class="lesson-item__info">
+                      <div class="lesson-item__title">${lesson.title}</div>
+                      <div class="lesson-item__duration">${lesson.duration}</div>
+                    </div>
+                    <span class="lesson-item__status">${completed ? '✅' : active ? '▶' : '🔒'}</span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+
+            <!-- Quiz Section -->
+            ${isEnrolled ? `
+              <div class="animate-fadeInUp delay-2" id="quizSection">
+                <h2 class="lesson-list__title" style="margin-top:var(--space-8)">🧠 Course Quiz (${c.quiz.length} questions)</h2>
+                ${renderQuiz()}
+              </div>
+            ` : ''}
+
+            <!-- Comments Section -->
+            <div class="animate-fadeInUp delay-3" style="margin-top:var(--space-8)">
+              <h2 class="lesson-list__title">💬 Discussion (${Store.getComments(c.id).length})</h2>
+              ${Store.isLoggedIn() ? `
+                <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-6)">
+                  <input type="text" id="commentInput" class="form-input" placeholder="Share your thoughts..." style="flex:1">
+                  <button class="btn btn--primary" onclick="postComment()">Post</button>
+                </div>
+              ` : '<p class="text-secondary text-sm mb-6"><a href="login.html" style="color:var(--accent-primary)">Sign in</a> to join the discussion</p>'}
+              <div id="commentsContainer">
+                ${renderComments()}
+              </div>
+            </div>
+
+            <!-- Similar Courses -->
+            <div style="margin-top:var(--space-8)">
+              <h2 class="lesson-list__title">📎 Similar Courses</h2>
+              <div class="courses-grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+                ${RecommendationEngine.getSimilarCourses(c.id, 4).map(r => UI.renderCourseCard(r.course)).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar -->
+          <div class="course-detail__sidebar">
+            <div class="course-sidebar-card">
+              <!-- Instructor -->
+              <div class="course-sidebar-card__instructor">
+                <div class="course-sidebar-card__instructor-avatar">${c.instructor.avatar}</div>
+                <div>
+                  <div class="course-sidebar-card__instructor-name">${c.instructor.name}</div>
+                  <div class="course-sidebar-card__instructor-role">${c.instructor.bio}</div>
+                </div>
+              </div>
+
+              <!-- Progress / Enroll -->
+              ${isEnrolled ? `
+                <div style="margin-bottom:var(--space-5)">
+                  <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm text-secondary">Progress</span>
+                    <span class="text-sm" style="font-weight:600;color:var(--accent-primary)">${progressPct}%</span>
+                  </div>
+                  <div class="skill-item__bar" style="height:8px">
+                    <div class="skill-item__bar-fill" style="width:${progressPct}%"></div>
+                  </div>
+                  <p class="text-xs text-secondary mt-2">${completedLessons}/${totalLessons} lessons completed</p>
+                </div>
+                <button class="btn btn--primary btn--full" onclick="completeCurrentLesson()">
+                  ✅ Complete Current Lesson
+                </button>
+              ` : `
+                <button class="btn btn--primary btn--full btn--lg" onclick="enrollCourse()" style="margin-bottom:var(--space-4)">
+                  🎯 Enroll for Free
+                </button>
+                <p class="text-xs text-center text-secondary">Free access to all lessons and quizzes</p>
+              `}
+
+              <!-- Course Stats -->
+              <div class="course-sidebar-card__stats" style="margin-top:var(--space-5);padding-top:var(--space-5);border-top:1px solid var(--border-primary)">
+                <div class="course-sidebar-card__stat">
+                  <span class="course-sidebar-card__stat-label">📚 Lessons</span>
+                  <span class="course-sidebar-card__stat-value">${c.lessons.length}</span>
+                </div>
+                <div class="course-sidebar-card__stat">
+                  <span class="course-sidebar-card__stat-label">⏱️ Duration</span>
+                  <span class="course-sidebar-card__stat-value">${c.duration}</span>
+                </div>
+                <div class="course-sidebar-card__stat">
+                  <span class="course-sidebar-card__stat-label">🎓 Level</span>
+                  <span class="course-sidebar-card__stat-value">${c.difficulty}</span>
+                </div>
+                <div class="course-sidebar-card__stat">
+                  <span class="course-sidebar-card__stat-label">⭐ Rating</span>
+                  <span class="course-sidebar-card__stat-value">${c.rating}/5</span>
+                </div>
+                <div class="course-sidebar-card__stat">
+                  <span class="course-sidebar-card__stat-label">🧠 Quiz</span>
+                  <span class="course-sidebar-card__stat-value">${c.quiz.length} questions</span>
+                </div>
+              </div>
+
+              <!-- Skills -->
+              <div class="course-sidebar-card__skills">
+                <h4 class="course-sidebar-card__skills-title">What you'll learn</h4>
+                <div class="course-sidebar-card__skills-list">
+                  ${c.skills.map(s => `<span class="course-sidebar-card__skill">${s}</span>`).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function enrollCourse() {
+      if (!Store.isLoggedIn()) {
+        window.location.href = 'login.html';
+        return;
+      }
+      Store.enroll(currentCourse.id);
+      UI.showToast('Enrolled! 🎉', `You're now enrolled in ${currentCourse.title}`, 'success');
+      UI.showXPPopup(5);
+      currentLesson = 0;
+      setTimeout(() => renderCourse(), 500);
+    }
+
+    function playLesson(index) {
+      currentLesson = index;
+      const lesson = currentCourse.lessons[index];
+      const player = document.getElementById('videoPlayer');
+      player.innerHTML = `<iframe src="${lesson.videoUrl}?rel=0&autoplay=1" allowfullscreen allow="autoplay; encrypted-media"></iframe>`;
+
+      // Update active lesson
+      document.querySelectorAll('.lesson-item').forEach((el, i) => {
+        el.classList.toggle('active', i === index);
+      });
+
+      // Update progress last accessed
+      const progress = Store.getProgress(currentCourse.id);
+      if (progress) {
+        progress.lastAccessedAt = new Date().toISOString();
+      }
+
+      player.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function completeCurrentLesson() {
+      if (!Store.isLoggedIn()) return;
+      Store.completeLesson(currentCourse.id, currentLesson);
+      UI.showXPPopup(10);
+      UI.showToast('Lesson Complete!', '+10 XP earned', 'success');
+
+      // Auto-advance to next lesson
+      if (currentLesson < currentCourse.lessons.length - 1) {
+        setTimeout(() => {
+          currentLesson++;
+          renderCourse();
+          playLesson(currentLesson);
+        }, 1000);
+      } else {
+        setTimeout(() => renderCourse(), 500);
+      }
+    }
+
+    function renderQuiz() {
+      const quiz = currentCourse.quiz;
+      if (!quiz.length) return '<p class="text-secondary">No quiz available for this course.</p>';
+
+      const best = Store.getProgress(currentCourse.id)?.quizScores;
+      const bestScore = best?.length ? Math.max(...best.map(s => s.percentage)) : null;
+
+      return `
+        <div class="quiz" id="quizContainer">
+          ${bestScore !== null ? `
+            <p class="text-sm mb-4" style="color:var(--accent-green)">
+              ✅ Best score: ${bestScore}% ${bestScore === 100 ? '— Perfect! 🌟' : '— Try again to improve!'}
+            </p>
+          ` : ''}
+          <div id="quizQuestion"></div>
+          <div class="quiz__footer">
+            <span class="quiz__progress" id="quizProgress"></span>
+            <button class="btn btn--primary" id="quizNextBtn" onclick="nextQuizQuestion()" disabled>Next →</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Initialize quiz rendering after DOM update
+    const originalRenderCourse = renderCourse;
+    renderCourse = function() {
+      originalRenderCourse();
+      if (Store.getProgress(currentCourse.id)?.enrolled) {
+        quizState = { current: 0, score: 0, answered: [] };
+        renderQuizQuestion();
+      }
+    };
+
+    function renderQuizQuestion() {
+      const quiz = currentCourse.quiz;
+      const q = quiz[quizState.current];
+      if (!q) return;
+
+      const container = document.getElementById('quizQuestion');
+      const progressEl = document.getElementById('quizProgress');
+      const nextBtn = document.getElementById('quizNextBtn');
+      if (!container) return;
+
+      nextBtn.disabled = true;
+      progressEl.textContent = `Question ${quizState.current + 1} of ${quiz.length}`;
+      nextBtn.textContent = quizState.current >= quiz.length - 1 ? 'Submit Quiz' : 'Next →';
+
+      container.innerHTML = `
+        <div class="quiz__question">
+          <span class="quiz__question-number">${quizState.current + 1}</span>
+          ${q.question}
+        </div>
+        <div class="quiz__options">
+          ${q.options.map((opt, i) => `
+            <div class="quiz__option" onclick="selectQuizOption(${i}, ${q.correctAnswer})" id="qopt_${i}">
+              <span class="quiz__option-marker">${String.fromCharCode(65 + i)}</span>
+              <span>${opt}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div id="quizExplanation"></div>
+      `;
+    }
+
+    function selectQuizOption(selected, correct) {
+      if (quizState.answered.includes(quizState.current)) return;
+      quizState.answered.push(quizState.current);
+
+      const isCorrect = selected === correct;
+      if (isCorrect) quizState.score++;
+
+      // Highlight options
+      currentCourse.quiz[quizState.current].options.forEach((_, i) => {
+        const el = document.getElementById(`qopt_${i}`);
+        el.style.pointerEvents = 'none';
+        if (i === correct) el.classList.add('correct');
+        if (i === selected && !isCorrect) el.classList.add('incorrect');
+      });
+
+      // Show explanation
+      const explanation = currentCourse.quiz[quizState.current].explanation;
+      if (explanation) {
+        document.getElementById('quizExplanation').innerHTML = `
+          <div class="quiz__explanation">${isCorrect ? '✅' : '💡'} ${explanation}</div>
+        `;
+      }
+
+      document.getElementById('quizNextBtn').disabled = false;
+    }
+
+    function nextQuizQuestion() {
+      const quiz = currentCourse.quiz;
+      if (quizState.current >= quiz.length - 1) {
+        // Submit quiz
+        const result = Store.submitQuiz(currentCourse.id, quizState.score, quiz.length);
+        const pct = result.percentage;
+
+        if (pct === 100) {
+          UI.showConfetti();
+          UI.showXPPopup(25);
+        } else {
+          UI.showXPPopup(Math.round(25 * pct / 100));
+        }
+
+        const container = document.getElementById('quizContainer');
+        container.innerHTML = `
+          <div class="text-center p-6">
+            <div style="font-size:4rem;margin-bottom:var(--space-4)">${pct >= 80 ? '🎉' : pct >= 50 ? '👍' : '📚'}</div>
+            <h3 style="font-size:var(--fs-xl);font-weight:var(--fw-bold);margin-bottom:var(--space-2)">Quiz Complete!</h3>
+            <p class="text-secondary mb-4">You scored ${quizState.score}/${quiz.length} (${pct}%)</p>
+            <div style="display:flex;gap:var(--space-3);justify-content:center">
+              <button class="btn btn--primary" onclick="retakeQuiz()">Retake Quiz</button>
+              <a href="dashboard.html" class="btn btn--secondary">Back to Dashboard</a>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      quizState.current++;
+      renderQuizQuestion();
+    }
+
+    function retakeQuiz() {
+      quizState = { current: 0, score: 0, answered: [] };
+      renderCourse();
+    }
+
+    function renderComments() {
+      const comments = Store.getComments(currentCourse.id);
+      if (!comments.length) return '<p class="text-secondary text-sm">No comments yet. Be the first!</p>';
+
+      return comments.map(cm => `
+        <div class="comment">
+          <div class="comment__avatar">${cm.avatar}</div>
+          <div class="comment__body">
+            <div class="comment__header">
+              <span class="comment__author">${cm.userName}</span>
+              <span class="comment__time">${cm.time}</span>
+            </div>
+            <p class="comment__text">${cm.content}</p>
+            <div class="comment__actions">
+              <span class="comment__action">👍 ${cm.likes}</span>
+              <span class="comment__action">Reply</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function postComment() {
+      const input = document.getElementById('commentInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      Store.addComment(currentCourse.id, text);
+      input.value = '';
+      document.getElementById('commentsContainer').innerHTML = renderComments();
+      UI.showToast('Comment posted!', '', 'success');
+    }
+  </script>
+</body>
+</html>

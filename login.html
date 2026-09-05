@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — LearnVerse</title>
+  <meta name="description" content="Sign in or create your LearnVerse account to start your personalized learning journey.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <div class="bg-animated"></div>
+
+  <main class="auth-page">
+    <div class="auth-card">
+      <div class="auth-card__logo">
+        <div class="navbar__logo-icon" style="margin:0 auto var(--space-3)">🚀</div>
+        <h1 class="auth-card__title">Welcome to LearnVerse</h1>
+        <p class="auth-card__subtitle">Your personalized learning journey starts here</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="loginTab" onclick="switchTab('login')">Sign In</button>
+        <button class="auth-tab" id="signupTab" onclick="switchTab('signup')">Sign Up</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label" for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" class="form-input" placeholder="you@example.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="Your password" required>
+        </div>
+        <button type="submit" class="btn btn--primary btn--full btn--lg" id="loginBtn">Sign In →</button>
+      </form>
+
+      <!-- Signup Form -->
+      <form id="signupForm" class="hidden" onsubmit="handleSignup(event)">
+        <div class="form-group">
+          <label class="form-label" for="signupName">Full Name</label>
+          <input type="text" id="signupName" class="form-input" placeholder="John Doe" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="signupEmail">Email</label>
+          <input type="email" id="signupEmail" class="form-input" placeholder="you@example.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="signupPassword">Password</label>
+          <input type="password" id="signupPassword" class="form-input" placeholder="Min. 6 characters" required minlength="6">
+        </div>
+
+        <!-- Interest Selection -->
+        <div class="interests-section">
+          <label class="interests-section__label">Select your interests (pick at least 2)</label>
+          <div class="interests-grid" id="interestsGrid"></div>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--full btn--lg" id="signupBtn">Create Account →</button>
+      </form>
+
+      <div class="auth-card__divider">or</div>
+
+      <a href="index.html" class="btn btn--ghost btn--full">← Back to Home</a>
+    </div>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/recommend.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    // Redirect if already logged in
+    if (Store.isLoggedIn()) {
+      window.location.href = 'dashboard.html';
+    }
+
+    // Render interest chips
+    const interestsGrid = document.getElementById('interestsGrid');
+    const selectedInterests = new Set();
+
+    CATEGORIES.forEach(cat => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'interest-chip';
+      chip.textContent = cat.icon + ' ' + cat.name;
+      chip.onclick = () => {
+        chip.classList.toggle('selected');
+        if (selectedInterests.has(cat.name)) {
+          selectedInterests.delete(cat.name);
+        } else {
+          selectedInterests.add(cat.name);
+        }
+      };
+      interestsGrid.appendChild(chip);
+    });
+
+    function switchTab(tab) {
+      document.getElementById('loginForm').classList.toggle('hidden', tab === 'signup');
+      document.getElementById('signupForm').classList.toggle('hidden', tab === 'login');
+      document.getElementById('loginTab').classList.toggle('active', tab === 'login');
+      document.getElementById('signupTab').classList.toggle('active', tab === 'signup');
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+
+      const user = Store.login(email, password);
+      if (user) {
+        UI.showToast('Welcome back!', `Good to see you, ${user.name}! 🎉`, 'success');
+        setTimeout(() => window.location.href = 'dashboard.html', 800);
+      } else {
+        UI.showToast('Login Failed', 'Invalid email or password. Sign up first if you\'re new!', 'error');
+      }
+    }
+
+    function handleSignup(e) {
+      e.preventDefault();
+      const name = document.getElementById('signupName').value;
+      const email = document.getElementById('signupEmail').value;
+      const password = document.getElementById('signupPassword').value;
+
+      if (selectedInterests.size < 2) {
+        UI.showToast('Select Interests', 'Please pick at least 2 interests to personalize your experience.', 'warning');
+        return;
+      }
+
+      const user = Store.register(name, email, password, [...selectedInterests]);
+      Store.updateStreak();
+      UI.showToast('Account Created!', 'Welcome to LearnVerse, ' + name + '! 🚀', 'success');
+      UI.showConfetti();
+      setTimeout(() => window.location.href = 'dashboard.html', 1200);
+    }
+  </script>
+</body>
+</html>

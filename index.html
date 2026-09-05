@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LearnVerse — Next-Gen E-Learning Platform</title>
+  <meta name="description" content="A personalized, gamified e-learning platform with AI-powered course recommendations. Master Web Dev, AI, Data Science and more.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <div class="bg-animated"></div>
+
+  <!-- Navbar -->
+  <header class="navbar" id="navbar"></header>
+
+  <!-- Page Content -->
+  <main class="page-wrapper">
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero__content">
+          <div class="hero__badge">✨ AI-Powered Learning Platform</div>
+          <h1 class="hero__title">
+            Learn Smarter, Not Harder with
+            <span class="text-gradient">LearnVerse</span>
+          </h1>
+          <p class="hero__subtitle">
+            Experience personalized learning paths, gamified progress tracking, and AI-driven course recommendations that adapt to your unique goals.
+          </p>
+          <div class="hero__actions">
+            <a href="login.html" class="btn btn--primary btn--lg" id="heroCTA">Start Learning Free →</a>
+            <a href="courses.html" class="btn btn--secondary btn--lg">Browse Courses</a>
+          </div>
+          <div class="hero__stats" id="heroStats">
+            <div>
+              <div class="hero__stat-value text-gradient" id="statCourses">30+</div>
+              <div class="hero__stat-label">Courses</div>
+            </div>
+            <div>
+              <div class="hero__stat-value text-gradient" id="statStudents">50K+</div>
+              <div class="hero__stat-label">Learners</div>
+            </div>
+            <div>
+              <div class="hero__stat-value text-gradient" id="statCategories">6</div>
+              <div class="hero__stat-label">Categories</div>
+            </div>
+            <div>
+              <div class="hero__stat-value text-gradient" id="statRating">4.7</div>
+              <div class="hero__stat-label">Avg Rating</div>
+            </div>
+          </div>
+        </div>
+        <div class="hero__visual">
+          <div class="hero__blob"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section class="featured-section">
+      <div class="container">
+        <div class="section__header reveal">
+          <h2 class="section__title">Explore <span class="text-gradient">Categories</span></h2>
+          <p class="section__subtitle">Choose from 6 cutting-edge technology domains</p>
+        </div>
+        <div class="categories-grid reveal" id="categoriesGrid"></div>
+      </div>
+    </section>
+
+    <!-- Trending Courses Section -->
+    <section class="section">
+      <div class="container" id="trendingSection"></div>
+    </section>
+
+    <!-- Recommended (if logged in) -->
+    <section class="section" id="recommendedSection" style="display:none">
+      <div class="container" id="recommendedContent"></div>
+    </section>
+
+    <!-- Why LearnVerse -->
+    <section class="section">
+      <div class="container">
+        <div class="section__header reveal">
+          <h2 class="section__title">Why <span class="text-gradient">LearnVerse</span>?</h2>
+          <p class="section__subtitle">More than just courses — a complete learning ecosystem</p>
+        </div>
+        <div class="grid grid-3 gap-6 reveal">
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--purple">🧠</div>
+            <h3 style="font-size:var(--fs-md);font-weight:var(--fw-bold);margin-bottom:var(--space-2)">AI Recommendations</h3>
+            <p class="text-secondary text-sm">Courses tailored to your interests, learning history, and skill level — powered by cosine similarity.</p>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--orange">🎮</div>
+            <h3 style="font-size:var(--fs-md);font-weight:var(--fw-bold);margin-bottom:var(--space-2)">Gamified Learning</h3>
+            <p class="text-secondary text-sm">Earn XP, collect badges, maintain streaks, and compete on leaderboards. Learning has never been more fun.</p>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--cyan">💬</div>
+            <h3 style="font-size:var(--fs-md);font-weight:var(--fw-bold);margin-bottom:var(--space-2)">Interactive & Social</h3>
+            <p class="text-secondary text-sm">In-video checkpoints, smart quizzes, AI chatbot for doubts, and community discussions under every course.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Platform Stats -->
+    <section class="platform-stats reveal">
+      <div class="container">
+        <div class="platform-stats__grid">
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--purple">📚</div>
+            <div class="stat-card__value">30+</div>
+            <div class="stat-card__label">Expert Courses</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--cyan">👥</div>
+            <div class="stat-card__value">50K+</div>
+            <div class="stat-card__label">Active Learners</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--green">🏆</div>
+            <div class="stat-card__value">12</div>
+            <div class="stat-card__label">Achievement Badges</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--orange">⭐</div>
+            <div class="stat-card__value">4.7</div>
+            <div class="stat-card__label">Average Rating</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+      <div class="container">
+        <div class="cta-card reveal">
+          <h2 class="cta-card__title">Ready to <span class="text-gradient">Level Up</span>?</h2>
+          <p class="cta-card__text">Join thousands of learners who've transformed their careers with LearnVerse. Start your personalized learning journey today.</p>
+          <a href="login.html" class="btn btn--primary btn--lg">Create Free Account →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <div id="footer"></div>
+  </main>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/recommend.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Render categories
+      const grid = document.getElementById('categoriesGrid');
+      if (grid) {
+        grid.innerHTML = CATEGORIES.map(cat => {
+          const count = COURSES.filter(c => c.category === cat.id).length;
+          return `
+            <a href="courses.html?category=${cat.id}" class="category-card">
+              <div class="category-card__icon">${cat.icon}</div>
+              <div class="category-card__name">${cat.name}</div>
+              <div class="category-card__count">${count} courses</div>
+            </a>
+          `;
+        }).join('');
+      }
+
+      // Trending courses
+      const trendingSection = document.getElementById('trendingSection');
+      if (trendingSection) {
+        const trending = RecommendationEngine.getTrending(8);
+        trendingSection.innerHTML = UI.renderScrollRow(
+          '🔥 Trending Now',
+          'Most popular courses across the platform',
+          trending.map(r => UI.renderCourseCard(r.course)).join(''),
+          'courses.html'
+        );
+      }
+
+      // Recommended for logged-in users
+      const user = Store.getUser();
+      if (user) {
+        const recSection = document.getElementById('recommendedSection');
+        const recContent = document.getElementById('recommendedContent');
+        if (recSection && recContent) {
+          recSection.style.display = 'block';
+          const recs = RecommendationEngine.getRecommendedForYou(8);
+          recContent.innerHTML = UI.renderScrollRow(
+            '🎯 Recommended for You',
+            `Based on your interests in ${user.interests.slice(0, 2).join(' & ')}`,
+            recs.map(r => UI.renderCourseCard(r.course)).join(''),
+            'dashboard.html'
+          );
+        }
+
+        // Update CTA
+        const cta = document.getElementById('heroCTA');
+        if (cta) {
+          cta.href = 'dashboard.html';
+          cta.textContent = 'Go to Dashboard →';
+        }
+      }
+
+      // Footer
+      document.getElementById('footer').innerHTML = UI.renderFooter();
+    });
+  </script>
+</body>
+</html>

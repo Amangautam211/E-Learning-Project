@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile — LearnVerse</title>
+  <meta name="description" content="View your achievements, skill analytics, and learning progress on LearnVerse.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <div class="bg-animated"></div>
+  <header class="navbar" id="navbar"></header>
+
+  <main class="page-wrapper">
+    <div class="container profile-page" id="profileContent"></div>
+    <div id="footer"></div>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/recommend.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = Store.getUser();
+      if (!user) { window.location.href = 'login.html'; return; }
+
+      const stats = Store.getStats();
+      const progress = Store.getAllProgress();
+      const content = document.getElementById('profileContent');
+
+      const avatar = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      const totalHrs = Math.round(stats.totalTimeMinutes / 60 * 10) / 10;
+
+      content.innerHTML = `
+        <!-- Profile Header -->
+        <div class="profile-header animate-fadeInUp">
+          <div class="profile-header__avatar">${avatar}</div>
+          <div class="profile-header__info">
+            <h1 class="profile-header__name">${user.name}</h1>
+            <p class="profile-header__email">${user.email}</p>
+            <div class="profile-header__level">⚡ Level ${stats.level} • ${stats.xp} XP total</div>
+            <div class="profile-header__interests">
+              ${user.interests.map(i => `<span class="tag">${i}</span>`).join('')}
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <button class="btn btn--outline btn--sm" onclick="editProfile()">Edit Profile</button>
+            <button class="btn btn--ghost btn--sm" onclick="logout()" style="color:var(--accent-red)">Sign Out</button>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="dashboard__stats mb-8">
+          <div class="dashboard__stat animate-fadeInUp delay-1">
+            <div class="dashboard__stat-icon" style="background:var(--accent-primary-light);color:var(--accent-primary)">⚡</div>
+            <div>
+              <div class="dashboard__stat-value">${stats.xp}</div>
+              <div class="dashboard__stat-label">Total XP</div>
+            </div>
+          </div>
+          <div class="dashboard__stat animate-fadeInUp delay-2">
+            <div class="dashboard__stat-icon" style="background:var(--accent-orange-light);color:var(--accent-orange)">🔥</div>
+            <div>
+              <div class="dashboard__stat-value">${stats.streak}</div>
+              <div class="dashboard__stat-label">Day Streak</div>
+            </div>
+          </div>
+          <div class="dashboard__stat animate-fadeInUp delay-3">
+            <div class="dashboard__stat-icon" style="background:var(--accent-green-light);color:var(--accent-green)">✅</div>
+            <div>
+              <div class="dashboard__stat-value">${stats.completedCount}</div>
+              <div class="dashboard__stat-label">Completed</div>
+            </div>
+          </div>
+          <div class="dashboard__stat animate-fadeInUp delay-4">
+            <div class="dashboard__stat-icon" style="background:var(--accent-cyan-light);color:var(--accent-cyan)">⏱️</div>
+            <div>
+              <div class="dashboard__stat-value">${totalHrs}h</div>
+              <div class="dashboard__stat-label">Time Spent</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-layout">
+          <!-- Achievements -->
+          <div class="profile-section animate-fadeInUp delay-2">
+            <h2 class="profile-section__title">🏆 Achievements (${stats.badges.length}/${ALL_BADGES.length})</h2>
+            <div class="badge-grid">
+              ${ALL_BADGES.map(b => {
+                const earned = stats.badges.includes(b.id);
+                return `
+                  <div class="badge ${earned ? '' : 'badge--locked'}" title="${b.description}">
+                    <span class="badge__icon">${b.icon}</span>
+                    <span class="badge__name">${b.name}</span>
+                    ${earned ? `<span class="badge__date">Earned</span>` : `<span class="badge__date" style="color:var(--text-tertiary)">Locked</span>`}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Skill Analytics -->
+          <div class="profile-section animate-fadeInUp delay-3">
+            <h2 class="profile-section__title">📊 Skill Analytics</h2>
+            ${stats.skills.length > 0 ? stats.skills.map(skill => `
+              <div class="skill-item">
+                <div class="skill-item__header">
+                  <span class="skill-item__name">${skill.name}</span>
+                  <span class="skill-item__value">${skill.value}%</span>
+                </div>
+                <div class="skill-item__bar">
+                  <div class="skill-item__bar-fill" style="width:${skill.value}%"></div>
+                </div>
+              </div>
+            `).join('') : '<p class="text-secondary text-sm">Enroll in courses to see your skill breakdown!</p>'}
+          </div>
+
+          <!-- Enrolled Courses -->
+          <div class="profile-section animate-fadeInUp delay-4" style="grid-column:1/-1">
+            <h2 class="profile-section__title">📚 My Courses (${stats.enrolledCount})</h2>
+            ${progress.length > 0 ? `
+              <div class="courses-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
+                ${progress.filter(p => p.enrolled).map(p => {
+                  const course = COURSES.find(c => c.id === p.courseId);
+                  if (!course) return '';
+                  return UI.renderCourseCard(course, p);
+                }).join('')}
+              </div>
+            ` : '<p class="text-secondary text-sm">No courses yet. <a href="courses.html" style="color:var(--accent-primary)">Browse courses</a></p>'}
+          </div>
+
+          <!-- Learning Activity -->
+          <div class="profile-section animate-fadeInUp delay-5" style="grid-column:1/-1">
+            <h2 class="profile-section__title">📈 Activity Summary</h2>
+            <div class="grid grid-3 gap-4" style="text-align:center">
+              <div>
+                <div style="font-size:var(--fs-2xl);font-weight:var(--fw-extrabold);color:var(--accent-primary)">${stats.totalLessons}</div>
+                <p class="text-sm text-secondary">Lessons Completed</p>
+              </div>
+              <div>
+                <div style="font-size:var(--fs-2xl);font-weight:var(--fw-extrabold);color:var(--accent-cyan)">${progress.reduce((sum, p) => sum + p.quizScores.length, 0)}</div>
+                <p class="text-sm text-secondary">Quizzes Taken</p>
+              </div>
+              <div>
+                <div style="font-size:var(--fs-2xl);font-weight:var(--fw-extrabold);color:var(--accent-green)">${user.commentsCount || 0}</div>
+                <p class="text-sm text-secondary">Comments Posted</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('footer').innerHTML = UI.renderFooter();
+
+      // Animate skill bars
+      setTimeout(() => {
+        document.querySelectorAll('.skill-item__bar-fill').forEach(bar => {
+          bar.style.width = bar.style.width; // Trigger animation
+        });
+      }, 300);
+    });
+
+    function editProfile() {
+      const user = Store.getUser();
+      const name = prompt('Enter your name:', user.name);
+      if (name && name.trim()) {
+        Store.updateUser({ name: name.trim() });
+        UI.showToast('Profile Updated!', '', 'success');
+        location.reload();
+      }
+    }
+
+    function logout() {
+      if (confirm('Are you sure you want to sign out?')) {
+        Store.logout();
+        window.location.href = 'index.html';
+      }
+    }
+  </script>
+</body>
+</html>

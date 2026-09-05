@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — LearnVerse</title>
+  <meta name="description" content="Your personalized learning dashboard with recommendations, progress tracking, and daily challenges.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <div class="bg-animated"></div>
+  <header class="navbar" id="navbar"></header>
+
+  <main class="page-wrapper">
+    <div class="container dashboard" id="dashboardContent">
+      <!-- Loading skeleton -->
+      <div class="dashboard__welcome">
+        <div class="skeleton skeleton-title" style="width:300px;height:36px"></div>
+        <div class="skeleton skeleton-text" style="width:200px"></div>
+      </div>
+    </div>
+    <div id="footer"></div>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/recommend.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = Store.getUser();
+      if (!user) { window.location.href = 'login.html'; return; }
+
+      Store.updateStreak();
+      const stats = Store.getStats();
+      const content = document.getElementById('dashboardContent');
+
+      // Welcome section
+      const hours = new Date().getHours();
+      const greeting = hours < 12 ? 'Good morning' : hours < 17 ? 'Good afternoon' : 'Good evening';
+
+      let html = `
+        <div class="dashboard__welcome animate-fadeInUp">
+          <h1 class="dashboard__greeting">${greeting}, ${user.name.split(' ')[0]}! 👋</h1>
+          <p class="dashboard__greeting-sub">Ready to continue your learning journey?</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="dashboard__stats">
+          <div class="dashboard__stat animate-fadeInUp delay-1">
+            <div class="dashboard__stat-icon" style="background:var(--accent-primary-light);color:var(--accent-primary)">⚡</div>
+            <div>
+              <div class="dashboard__stat-value">${stats.xp}</div>
+              <div class="dashboard__stat-label">Total XP • Level ${stats.level}</div>
+            </div>
+          </div>
+          <div class="dashboard__stat animate-fadeInUp delay-2">
+            <div class="dashboard__stat-icon" style="background:var(--accent-orange-light);color:var(--accent-orange)">🔥</div>
+            <div>
+              <div class="dashboard__stat-value">${stats.streak}</div>
+              <div class="dashboard__stat-label">Day Streak</div>
+            </div>
+          </div>
+          <div class="dashboard__stat animate-fadeInUp delay-3">
+            <div class="dashboard__stat-icon" style="background:var(--accent-green-light);color:var(--accent-green)">📚</div>
+            <div>
+              <div class="dashboard__stat-value">${stats.enrolledCount}</div>
+              <div class="dashboard__stat-label">Enrolled Courses</div>
+            </div>
+          </div>
+          <div class="dashboard__stat animate-fadeInUp delay-4">
+            <div class="dashboard__stat-icon" style="background:var(--accent-cyan-light);color:var(--accent-cyan)">✅</div>
+            <div>
+              <div class="dashboard__stat-value">${stats.totalLessons}</div>
+              <div class="dashboard__stat-label">Lessons Completed</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard__main">
+          <div class="dashboard__content">
+      `;
+
+      // Continue Learning
+      const continuing = RecommendationEngine.getContinueLearning();
+      if (continuing.length > 0) {
+        html += UI.renderScrollRow(
+          '📖 Continue Learning',
+          'Pick up where you left off',
+          continuing.map(item => {
+            const progress = Store.getProgress(item.course.id);
+            return UI.renderCourseCard(item.course, progress);
+          }).join('')
+        );
+      }
+
+      // Recommended for You
+      const recommended = RecommendationEngine.getRecommendedForYou(8);
+      html += UI.renderScrollRow(
+        '🎯 Recommended for You',
+        `Based on your interests in ${user.interests.slice(0, 2).join(' & ')}`,
+        recommended.map(r => UI.renderCourseCard(r.course)).join(''),
+        'courses.html'
+      );
+
+      // Based on Learning
+      const basedOn = RecommendationEngine.getBasedOnLearning(8);
+      if (basedOn.length > 0) {
+        html += UI.renderScrollRow(
+          '🧠 Based on Your Learning',
+          'Similar to courses you\'ve explored',
+          basedOn.map(r => UI.renderCourseCard(r.course)).join('')
+        );
+      }
+
+      // Challenge Yourself
+      const challenges = RecommendationEngine.getChallengeYourself(4);
+      if (challenges.length > 0) {
+        html += UI.renderScrollRow(
+          '🚀 Challenge Yourself',
+          'Level up with more advanced courses',
+          challenges.map(r => UI.renderCourseCard(r.course)).join('')
+        );
+      }
+
+      // Trending
+      html += UI.renderScrollRow(
+        '🔥 Trending Now',
+        'Popular across the platform',
+        RecommendationEngine.getTrending(8).map(r => UI.renderCourseCard(r.course)).join(''),
+        'courses.html'
+      );
+
+      html += `</div><!-- end dashboard__content -->`;
+
+      // Sidebar
+      html += `
+          <div class="dashboard__sidebar">
+            <!-- Daily Challenge -->
+            ${renderDailyChallenge()}
+
+            <!-- Badges -->
+            <div class="sidebar-card">
+              <h3 class="sidebar-card__title">🏆 Recent Badges</h3>
+              <div class="badge-grid">
+                ${ALL_BADGES.slice(0, 6).map(b => {
+                  const earned = stats.badges.includes(b.id);
+                  return `
+                    <div class="badge ${earned ? '' : 'badge--locked'}" title="${b.description}">
+                      <span class="badge__icon">${b.icon}</span>
+                      <span class="badge__name">${b.name}</span>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+              <a href="profile.html" class="btn btn--ghost btn--sm btn--full mt-4">View All →</a>
+            </div>
+
+            <!-- Leaderboard -->
+            <div class="sidebar-card">
+              <h3 class="sidebar-card__title">🏅 Leaderboard</h3>
+              ${renderLeaderboard()}
+            </div>
+
+            <!-- Quick Links -->
+            <div class="sidebar-card">
+              <h3 class="sidebar-card__title">⚡ Quick Actions</h3>
+              <div class="flex flex-col gap-2">
+                <a href="courses.html" class="btn btn--secondary btn--sm btn--full">Browse All Courses</a>
+                <a href="profile.html" class="btn btn--ghost btn--sm btn--full">View Profile</a>
+              </div>
+            </div>
+          </div>
+        </div><!-- end dashboard__main -->
+      `;
+
+      content.innerHTML = html;
+      document.getElementById('footer').innerHTML = UI.renderFooter();
+      UI.initRevealAnimations();
+    });
+
+    function renderDailyChallenge() {
+      const challenge = Store.getDailyChallenge();
+      if (challenge.completed) {
+        return `
+          <div class="daily-challenge">
+            <h3 class="daily-challenge__title">⚔️ Daily Challenge</h3>
+            <p class="daily-challenge__desc">
+              ${challenge.answeredCorrectly ? '✅ Completed! Great job!' : '❌ Better luck tomorrow!'}
+            </p>
+            <p class="daily-challenge__reward">Come back tomorrow for a new challenge!</p>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="daily-challenge" id="dailyChallenge">
+          <h3 class="daily-challenge__title">⚔️ Daily Challenge</h3>
+          <p class="daily-challenge__desc">${challenge.question}</p>
+          <div class="quiz__options" style="margin-bottom:var(--space-3)">
+            ${challenge.options.map((opt, i) => `
+              <div class="quiz__option" onclick="answerDailyChallenge(${i}, ${challenge.correctAnswer})">
+                <span class="quiz__option-marker">${String.fromCharCode(65 + i)}</span>
+                <span>${opt}</span>
+              </div>
+            `).join('')}
+          </div>
+          <p class="daily-challenge__reward">🎁 Reward: +${challenge.xpReward} XP</p>
+        </div>
+      `;
+    }
+
+    function answerDailyChallenge(selected, correct) {
+      const isCorrect = selected === correct;
+      Store.completeDailyChallenge(isCorrect);
+
+      const options = document.querySelectorAll('#dailyChallenge .quiz__option');
+      options.forEach((opt, i) => {
+        opt.style.pointerEvents = 'none';
+        if (i === correct) opt.classList.add('correct');
+        if (i === selected && !isCorrect) opt.classList.add('incorrect');
+      });
+
+      if (isCorrect) {
+        UI.showXPPopup(15);
+        UI.showConfetti();
+        setTimeout(() => UI.showToast('Daily Challenge Complete!', '+15 XP earned! 🎉', 'success'), 500);
+      } else {
+        UI.showToast('Not quite!', 'The correct answer was highlighted. Try again tomorrow!', 'warning');
+      }
+    }
+
+    function renderLeaderboard() {
+      // Simulated leaderboard data
+      const leaders = [
+        { name: 'Alex Kim', xp: 2450 },
+        { name: 'Priya S.', xp: 2180 },
+        { name: 'James W.', xp: 1920 },
+        { name: Store.getUser()?.name || 'You', xp: Store.getUser()?.xp || 0 },
+        { name: 'Emma R.', xp: 1650 }
+      ].sort((a, b) => b.xp - a.xp);
+
+      return leaders.map((l, i) => {
+        const isUser = l.name === Store.getUser()?.name;
+        return `
+          <div class="leaderboard-item" style="${isUser ? 'background:var(--accent-primary-light);border-radius:var(--radius-md)' : ''}">
+            <div class="leaderboard-item__rank leaderboard-item__rank--${i + 1}">${i + 1}</div>
+            <div class="leaderboard-item__info">
+              <div class="leaderboard-item__name">${l.name} ${isUser ? '(You)' : ''}</div>
+            </div>
+            <div class="leaderboard-item__xp">⚡ ${l.xp.toLocaleString()} XP</div>
+          </div>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>
